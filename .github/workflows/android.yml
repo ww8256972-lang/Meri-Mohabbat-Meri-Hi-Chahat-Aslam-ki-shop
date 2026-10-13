@@ -1,0 +1,92 @@
+name: Android CI - ASLAM RECORD APK Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & Verify Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant Execute Permission to Gradlew
+        run: chmod +x gradlew
+
+      - name: Prepare Environment File
+        run: |
+          if [ ! -f .env ] && [ -f .env.example ]; then
+            cp .env.example .env
+          fi
+
+      - name: Run Unit Tests
+        run: ./gradlew --no-daemon testDebugUnitTest
+
+      - name: Build Debug APK
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Verify & Inspect Generated APKs
+        run: |
+          echo "Scanning for built APKs..."
+          find app/build/outputs/apk -name "*.apk" -type f | while read -r apk; do
+            echo "Found APK: $apk"
+            ls -lh "$apk"
+          done
+
+          DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$DEBUG_APK" ]; then
+            echo "ERROR: Expected Debug APK not found at $DEBUG_APK"
+            exit 1
+          fi
+          FILE_SIZE=$(stat -c%s "$DEBUG_APK" 2>/dev/null || stat -f%z "$DEBUG_APK")
+          if [ "$FILE_SIZE" -le 1024 ]; then
+            echo "ERROR: APK file is too small or corrupt ($FILE_SIZE bytes)"
+            exit 1
+          fi
+          echo "============================================="
+          echo "SUCCESS: Debug APK built successfully!"
+          echo "Path: $DEBUG_APK"
+          echo "Size: $(du -h "$DEBUG_APK" | cut -f1)"
+          echo "============================================="
+
+      - name: Upload Debug APK Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aslam-record-apk
+          path: app/build/outputs/apk/**/*.apk
+          retention-days: 14
+
+      - name: Upload Test Reports (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            app/build/reports/
+            app/build/outputs/logs/
+          retention-days: 7

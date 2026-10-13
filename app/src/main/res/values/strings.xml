@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ASLAM RECORD</string>
+    <string name="shop_tagline">Shop &amp; Inventory Management</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_inventory">Inventory</string>
+    <string name="nav_sales">Sales</string>
+    <string name="nav_customers">Khata / Parties</string>
+    <string name="nav_reports">Reports</string>
+    <string name="nav_ai">ASLAM AI</string>
+</resources>

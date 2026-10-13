@@ -1,0 +1,6 @@
+{
+  "name": "ASLAM RECORD",
+  "description": "Smart native shop management for inventory, purchases, sales, customers, pending payments, receipts, expenses, and financial reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
